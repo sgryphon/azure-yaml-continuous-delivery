@@ -26,22 +26,54 @@ dotnet new react --output src/Demo.WebApp --ProxyPort 44301
 dotnet sln add src/Demo.WebApp
 ```
 
-Check it works by running the web app: 
+Check it works by running the web API in one PowerShell terminal:
 
-```sh
-dotnet run --project src/Demo.WebApp --environment Development
+```pwsh
+dotnet run --project src/Demo.WebApp --environment Development --urls 'http://*:8002'
 ```
 
-Take note of the back end developer port, and then check with a browser, e.g. `https://localhost:7084/`. This will launch and redirect to the front end proxy.
+And then also running the front end proxy in a second PowerShell terminal (pointing at the API):
 
+```pwsh
+$env:ASPNETCORE_URLS = 'http://localhost:8002'
+npm run start --prefix src/Demo.WebApp/ClientApp
+```
 
-TODO: Fix back end port, e.g.  --urls "https://*:44302"
+Check the front end proxy with a browser, e.g. `https://localhost:44301/`, and make sure to go to the Fetch data page to ensure the connection to the API is working.
 
 **NOTE:** If you have trouble with HTTPS, or do not have certificates set up, then see the section at the end of this file for HTTPS Developer Certificates.
 
+### HTTPS for the web API (on Ubuntu)
+
+**TODO:** Using HTTPS for the API had issues working on Ubuntu, where the proxied request would time out, and eventually report a JS stack trace referencing `builtin exit frame: getPeerCertificate` and `FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory`
+
+Web API:
+
+```pwsh
+dotnet run --project src/Demo.WebApp --environment Development --urls 'https://*:44302'
+```
+
+Front end:
+
+```pwsh
+$env:ASPNETCORE_URLS = 'https://localhost:44302'
+npm run start --prefix src/Demo.WebApp/ClientApp
+```
 
 
+## Note on dotnet 6 default react ports
 
+A random port (HTTPS by default) is used for the front end proxy, usually in the 44xxx range, and inserted into `ClientApp/.env.development`, and also into the SpaProxyServerUrl property in `<appname>.csproj`.
+
+This can be set by passing an explicit value for `--ProxyPort` to the dotnet create command, which will update both locations, e.g. `dotnet new react --output src/Demo.WebApp --ProxyPort 44301`
+
+Random ports are also used for the API in the default Kestrel profile in `Properties/launchSettings.json` for applicationUrl, setting both HTTPS port (in the 7xxx range) and HTTP port (in the 5xxx range).
+
+Random ports are also used for the API `iisSettings` for the alternate IIS Express profile for HTTPS (in the 443xx) range and HTTP (in the 3xxxx range).
+
+When passing the API settings to the front end app, they are handled in `ClientApp/src/setupProxy.js`, which uses the environment variable `ASPNETCORE_HTTPS_PORT` if set, otherwise the first value in `ASPNETCORE_URLS`, otherwise defaulting to the IIS HTTP value (in the 3xxxx range).
+
+The `ASPNETCORE_URLS` environment variable is the same setting used by Kestrel.
 
 
 ## HTTPS Developer Certificates
