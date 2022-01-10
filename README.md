@@ -63,6 +63,38 @@ npm run start --prefix src/Demo.WebApp/ClientApp
 This may be the Node server not trusting the developer certificate. A similar issue happens if you just run the API server, and use it to trigger automatic launching of the front end proxy.
 
 
+## Semantic versioning
+
+For automated deployment you need a way to track which version is being deployed. For example, you can use GitVersion, which has built in support for semantic versioning.
+
+```pwsh
+dotnet new tool-manifest
+dotnet tool install GitVersion.Tool
+```
+
+To see the version run `dotnet gitversion`. You can use different configurations, e.g. to use Mainline versioning and use the ShortSha for AssemblyInformationVersion, use the following `GitVersion.yml`:
+
+```yaml
+assembly-versioning-scheme: MajorMinor
+assembly-informational-format: '{SemVer}+{ShortSha}'
+mode: Mainline
+branches: {}
+ignore:
+  sha: []
+```
+
+To test local build and publish, you can also create a basic `build.ps1` script that generates the current version number and then tests, builds and publishes the project (however this project has no tests).
+
+```pwsh
+#!/usr/bin/env pwsh
+
+dotnet tool restore
+$json = (dotnet tool run dotnet-gitversion /output json)
+$v = ($json | ConvertFrom-Json)
+dotnet publish (Join-Path $PSScriptRoot 'azure-yaml-continuous-delivery.sln') -c Release -p:AssemblyVersion=$($v.AssemblySemVer) -p:FileVersion=$($v.AssemblySemFileVer) -p:Version=$($v.SemVer)+$($v.ShortSha) --output publish
+```
+
+
 ## Note on dotnet 6 default react ports
 
 A random port (HTTPS by default) is used for the front end proxy, usually in the 44xxx range, and inserted into `ClientApp/.env.development`, and also into the SpaProxyServerUrl property in `<appname>.csproj`.
