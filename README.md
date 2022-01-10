@@ -60,6 +60,8 @@ $env:ASPNETCORE_URLS = 'https://localhost:44302'
 npm run start --prefix src/Demo.WebApp/ClientApp
 ```
 
+This may be the Node server not trusting the developer certificate. A similar issue happens if you just run the API server, and use it to trigger automatic launching of the front end proxy.
+
 
 ## Note on dotnet 6 default react ports
 
@@ -73,7 +75,7 @@ Random ports are also used for the API `iisSettings` for the alternate IIS Expre
 
 When passing the API settings to the front end app, they are handled in `ClientApp/src/setupProxy.js`, which uses the environment variable `ASPNETCORE_HTTPS_PORT` if set, otherwise the first value in `ASPNETCORE_URLS`, otherwise defaulting to the IIS HTTP value (in the 3xxxx range).
 
-The `ASPNETCORE_URLS` environment variable is the same setting used by Kestrel.
+The `ASPNETCORE_URLS` environment variable is the same setting used by Kestrel, although Kestrel may use wild card values instead of specific addresses.
 
 
 ## HTTPS Developer Certificates
