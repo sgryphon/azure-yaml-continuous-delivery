@@ -109,9 +109,14 @@ az account set --subscription <subscription id>
 Create a script (or several) to deploy the needed infrastructure. Create all the required infrastructure via scripts, so that it can be automatically deployed to each environment using the pipeline.
 
 ```pwsh
-$Environment = 'Dev'
-$Location = 'australiaeast'
-$OrgId = "0x$((az account show --query id --output tsv).Substring(0,4))"
+#!/usr/bin/env pwsh
+
+[CmdletBinding()]
+param (
+    [string]$Environment = $ENV:DEPLOY_ENVIRONMENT ?? 'Dev',
+    [string]$Location = $ENV:DEPLOY_LOCATION ?? 'australiaeast',
+    [string]$OrgId = $ENV:DEPLOY_ORGID ?? "0x$((az account show --query id --output tsv).Substring(0,4))"
+)
 
 $appName = 'pipelinedemo'
 
@@ -135,6 +140,11 @@ az appservice plan create -n $aspName --sku $sku --number-of-workers $numberOfWo
 az webapp create -n $wappName -p $aspName -g $rgName --tags $tags
 ```
 
+TODO: Set app settings for web app with app insights connection string (will override config)
+
+TODO: Set web app logs, errors, etc to go to app insights
+
+
 This script can be run locally, to create personal development infrastructure in your own Azure subscription, and the same scripts run for pipeline deployment. Sometimes you might want to have a separate project, repository, or pipeline for deploying infrastructure, particularly if it is managed with a different cadence.
 
 Infrastructure deployment may consist of a single resource group with a few resources, or a much more complex configuration. For local deployment it can also be useful to provide a remove script to clean up for individual developers.
@@ -147,13 +157,64 @@ However you also need to use an organisation or subscription identifier in globa
 
 Scripts should also follow standard tagging conventions from  Azure Cloud Adoption Framework, https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-tagging
 
+### Deployment parameters
+
+There are potentially a lot of different deployment parameters that you want to change, and you may not know all of them in advance.
+
+This makes it hard to have a specific set of parameters to the deployment scripts (and such a solution would not be generic).
+
+Each script, or part of a script, should be independent and manage it's own parameters. This could mean a generic context dictionary is passed in, however this already exists in the form of environment variables. Each script can read relevant environment variables, falling back to an appropriate default.
+
+Another solution could be to have a configuration file, e.g. JSON, that is updated or replaced for each environment and accessible to all scripts. This also has the benefit of documenting what parameters exist to be set.
+
 ### Shared infrastructure
 
 Sometimes there may be shared infrastructure, e.g. a web app may be deployed to an existing app service plan, or an app insights instance may connect to an existing log analytics workspace. Any virtual network configuration is probably shared infrastructure.
 
 This may mean there is a separate project and pipeline for the shared infrastructure (in a separate resource group), but still allowing the project to manage the specific resources as part of their build. For local deployments this may mean additional scripts are needed to also create this shared infrastructure.
 
+## Pipeline skeleton
 
+TODO:
+
+## Add the pipeline in Azure DevOps
+
+TODO:
+
+## Add environment gates
+
+TODO:
+
+## Add build jobs
+
+TODO:
+
+## Add deployment jobs
+
+TODO:
+
+## Configuring pipeline parameters
+
+TODO:
+
+## Additional considerations
+
+### More complex builds
+
+TODO:
+
+### Testing pipeline changes
+
+TODO:
+
+### Converting from DevOps Releases
+
+TODO:
+
+
+## Next steps
+
+TODO:
 
 
 ## Note on dotnet 6 default react ports
