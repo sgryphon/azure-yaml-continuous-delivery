@@ -95,6 +95,67 @@ dotnet publish (Join-Path $PSScriptRoot 'azure-yaml-continuous-delivery.sln') -c
 ```
 
 
+## Infrastructure as code
+
+There are a lot of alternatives for deploying websites, such as deploying containers, pushing to a Git repository that is automatically deployed, or using deployment slots for quick changes between Staging and Production. There are also many different ways to create Azure infrastructure as code -- Bicep, ARM templates, Azure PowerShell, and Azure CLI. These examples use Azure CLI.
+
+To run the script locally you first log in to Azure CLI.
+
+```pwsh
+az login
+az account set --subscription <subscription id>
+```
+
+Create a script (or several) to deploy the needed infrastructure. Create all the required infrastructure via scripts, so that it can be automatically deployed to each environment using the pipeline.
+
+```pwsh
+$Environment = 'Dev'
+$Location = 'australiaeast'
+$OrgId = "0x$((az account show --query id --output tsv).Substring(0,4))"
+
+$appName = 'pipelinedemo'
+
+$rgName = "rg-$appName-$Environment-001".ToLowerInvariant()
+$laName = "la-$appName-$Environment".ToLowerInvariant()
+$appiName = "appi-$appName-$Environment".ToLowerInvariant()
+$aspName = "asp-$appName-$Environment".ToLowerInvariant()
+$wappName = "$appName-$OrgId-$Environment".ToLowerInvariant()
+
+$TagDictionary = @{ WorkloadName = 'demowebapp'; DataClassification = 'Non-business'; Criticality = 'Low'; `
+  BusinessUnit = 'Demo'; ApplicationName = $appName; Env = $Environment }
+$tags = $TagDictionary.Keys | ForEach-Object { $key = $_; "$key=$($TagDictionary[$key])" }
+
+az group create -g $rgName -l $location --tags $tags
+az monitor log-analytics workspace create --workspace-name $laName `
+  --resource-group $rgName -l $rg.location --tags $tags
+az monitor app-insights component create --app $appiName --workspace $laName `
+  -g $rgName -l $rg.location --tags $tags
+az appservice plan create -n $aspName --sku $sku --number-of-workers $numberOfWorkers `
+  -g $rgName -l $rg.location --tags $tags
+az webapp create -n $wappName -p $aspName -g $rgName --tags $tags
+```
+
+This script can be run locally, to create personal development infrastructure in your own Azure subscription, and the same scripts run for pipeline deployment. Sometimes you might want to have a separate project, repository, or pipeline for deploying infrastructure, particularly if it is managed with a different cadence.
+
+Infrastructure deployment may consist of a single resource group with a few resources, or a much more complex configuration. For local deployment it can also be useful to provide a remove script to clean up for individual developers.
+
+### Naming conventions and unique names
+
+Follow the standard naming conventions from Azure Cloud Adoption Framework, https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-naming
+
+However you also need to use an organisation or subscription identifier in global names to make them unique. For example if there are multiple developers that will deploy a web app, suffix the app name with the first four characters of their subscripition ID to make unique web addresses.
+
+Scripts should also follow standard tagging conventions from  Azure Cloud Adoption Framework, https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-tagging
+
+### Shared infrastructure
+
+Sometimes there may be shared infrastructure, e.g. a web app may be deployed to an existing app service plan, or an app insights instance may connect to an existing log analytics workspace. Any virtual network configuration is probably shared infrastructure.
+
+This may mean there is a separate project and pipeline for the shared infrastructure (in a separate resource group), but still allowing the project to manage the specific resources as part of their build. For local deployments this may mean additional scripts are needed to also create this shared infrastructure.
+
+
+
+
 ## Note on dotnet 6 default react ports
 
 A random port (HTTPS by default) is used for the front end proxy, usually in the 44xxx range, and inserted into `ClientApp/.env.development`, and also into the SpaProxyServerUrl property in `<appname>.csproj`.

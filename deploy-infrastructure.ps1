@@ -22,7 +22,6 @@
 
 .EXAMPLE
 
-   az extension add --name azure-iot
    az login
    az account set --subscription <subscription id>
    $VerbosePreference = 'Continue'
@@ -37,7 +36,7 @@ param (
     ## The Azure region where the resource is deployed.
     [string]$Location = $ENV:DEPLOY_LOCATION ?? 'australiaeast',
     ## Identifier for the organisation (or subscription) to make global names unique.
-    [string]$OrgId = $ENV:DEPLOY_ORGID ?? "0x$((Get-AzContext).Subscription.Id.Substring(0,4))"
+    [string]$OrgId = $ENV:DEPLOY_ORGID ?? "0x$((az account show --query id --output tsv).Substring(0,4))"
 )
 
 $ErrorActionPreference="Stop"
