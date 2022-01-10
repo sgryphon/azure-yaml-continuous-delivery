@@ -18,5 +18,7 @@ Write-Verbose "Removing from context subscription ID $SubscriptionId"
 $appName = 'pipelinedemo'
 
 $rgName = "rg-$appName-$Environment-001".ToLowerInvariant()
+$laName = "la-$appName-$Environment".ToLowerInvariant()
 
+az monitor log-analytics workspace delete --force true --resource-group $rgName --workspace-name $laName
 az group delete --name $rgName
