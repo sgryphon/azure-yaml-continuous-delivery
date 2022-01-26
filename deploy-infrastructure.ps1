@@ -10,7 +10,7 @@
   * PowerShell, https://github.com/PowerShell/PowerShell
   * Azure CLI, https://docs.microsoft.com/en-us/cli/azure/
 
-  You also need to connect to Azure (log in), and set the desired subscripition context.
+  You also need to connect to Azure (log in), and set the desired subscription context.
 
   Follow standard naming conventions from Azure Cloud Adoption Framework, 
   with an additional organisation or subscription identifier (after app name) in global names 
@@ -42,7 +42,7 @@ param (
 $ErrorActionPreference="Stop"
 
 $SubscriptionId = $(az account show --query id --output tsv)
-Write-Verbose "Using context subscription ID $SubscriptionId"
+Write-Verbose "Deploying scripts for environment '$Environment' in subscription '$SubscriptionId'"
 
 $scriptItems = Get-ChildItem "$PSScriptRoot/infrastructure" -Filter '*.ps1' `
   | Sort-Object -Property Name `

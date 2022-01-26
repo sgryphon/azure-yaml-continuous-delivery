@@ -29,4 +29,11 @@ public class WeatherForecastController : ControllerBase
         })
         .ToArray();
     }
+
+    [HttpGet("throw")]
+    public string ExampleError()
+    {
+        throw new Exception("Bad stuff");
+    }
+
 }
