@@ -29,8 +29,8 @@ stages:
           echo SourceFromMacro x$(SourceFromMacro)x
           echo SourceFromTemplate1 x$(SourceFromTemplate)x
           echo SourceFromTemplate2 x$(SourceFromTemplate2)x
-          echo SourceFromExpression1: x$(SourceFromExpression1)x
-          echo SourceFromExpression2: x$(SourceFromExpression2)x
+          echo SourceFromExpression1 x$(SourceFromExpression1)x
+          echo SourceFromExpression2 x$(SourceFromExpression2)x
       - bash: echo Using eq IsMain
         condition: and(succeeded(), eq(variables.IsMain, 'true'))
       - bash: echo Using eq IsPipelineTest

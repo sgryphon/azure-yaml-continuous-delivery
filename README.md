@@ -175,15 +175,62 @@ This may mean there is a separate project and pipeline for the shared infrastruc
 
 ## Pipeline skeleton
 
-TODO:
+First, create a basic `azure-pipelines.yml`, with a single build Stage, and Job with a single Step that echos a hello message; commit it, and push it to your GitHub repository.
+
+```
+trigger:
+- main
+
+stages:
+  - stage: BuildStage
+    displayName: Build
+    jobs:
+    - job: Build
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      steps:
+      - bash: echo Hello YAML build
+```
 
 ## Add the pipeline in Azure DevOps
 
 TODO:
 
+In Azure DevOps, create a new project. You can use Git for source control and Agile as the process template, although these won't be used. The example project is Public, but you normally an organisation would use Private projects.
+
+From the left hand menu, select Pipelines > Pipelines, and then Create Pipeline.
+
+For 'Where is your code?', select GitHub, then sign in (you may need to also complete any two-factor authentication). You will then need to authorise "Azure Pipelines (OAuth)".
+
+Azure DevOps will show a list of your GitHub repositories, and you can select the one you have created the pipeline in. This will direct you back to github where you then need to approve & install "Azure Pipelines". You can install in All repositories if desired (or just the ones you are using).
+
+It should then come back to Azure DevOps with "Review your pipeline YAML", and show you the basic `azure-pipelines.yml` from your project. You can click 'Run' for an initial run of your new pipeline.
+
+Once set up, Azure DevOps will monitor the specified trigger for changes.
+
+**Troubleshooting**
+
+When I first authorised "Azure Pipelines", it sent me to a sign up screen for a new Azure DevOps organisation, and would not let me select an existing one.
+
+I cancelled, reloaded the Azure DevOps project, and went through the Create Pipeline steps a second time, and it worked.
+
 ## Add environment gates
 
 TODO:
+
+Under Pipelines > Environments create your environments, e.g.
+
+* Integration - Where merged branches are continuous integrated and deployed.
+* Test - Where builds are manually released to for testing.
+* Production - Where live systems run.
+
+Open the Test environment and in the "..." menu select Approvals and Checks, then select Approval. For approvers, add "[your project]\Contributors" (or the appropriate group), and click Create.
+
+This will add a gate before any stages linked to the Test environment will be run.
+
+Add a similar approval to the Production environment.
+
 
 ## Add build jobs
 
