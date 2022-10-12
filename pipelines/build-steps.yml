@@ -27,8 +27,8 @@ steps:
 - bash: echo Using eq IsDeploymentBranch
   condition: eq(variables.IsDeploymentBranch, 'true')
 - bash: echo Template IsDeploymentBranch x${{ variables.IsDeploymentBranch }}x
-- bash: echo Expression IsDeploymentBranch x$[ variables.IsDeploymentBranch ]x
-- bash: echo Macro IsDeploymentBranch x$(IsDeploymentBranch)x
+- bash: echo $'Expression IsDeploymentBranch x$[ variables.IsDeploymentBranch ]x'
+- bash: echo $'Macro IsDeploymentBranch x$(IsDeploymentBranch)x'
 
 - task: DotNetCoreCLI@2
   displayName: Run dotnet tool restore
