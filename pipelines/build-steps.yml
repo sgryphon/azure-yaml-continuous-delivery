@@ -50,7 +50,7 @@ steps:
   inputs:
     command: build
     arguments: '-c Debug -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha)'
-    projects: *.sln
+    projects: '*.sln'
 
 #      - task: DotNetCoreCLI@2
 #        displayName: Run dotnet test
