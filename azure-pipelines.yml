@@ -45,7 +45,7 @@ stages:
       - bash: echo Using IsPipelineTest
         condition: and(succeeded(), variables.IsPipelineTest)
       - bash: echo IsMain Macro x$(IsMain)x
-      - bash: echo ""IsMain Template x${{ variables.IsMain }}x""
+      - bash: echo $'IsMain Template x${{ variables.IsMain }}x'
 
     - job: BuildJob
       displayName: Build
