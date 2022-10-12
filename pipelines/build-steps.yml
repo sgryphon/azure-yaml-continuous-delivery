@@ -80,9 +80,9 @@ steps:
   condition: succeeded()
   inputs:
     command: publish
-    publishWebProjects: false
+    publishWebProjects: true
     projects: '*.sln'
-    arguments: '-c Release --runtime win-x64 --self-contained false -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.ArtifactStagingDirectory)'
+    arguments: '-c Release -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.ArtifactStagingDirectory)'
     zipAfterPublish: true
     modifyOutputPath: false
 
