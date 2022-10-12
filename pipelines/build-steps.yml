@@ -3,9 +3,6 @@ parameters:
     type: boolean
   - name: IsDeploymentBranchString
 
-variables:
-  IsDeploymentBranchVariable: ${{ parameters.IsDeploymentBranch }}
-
 steps:
 - checkout: self
   fetchDepth: 0
@@ -25,13 +22,13 @@ steps:
   condition: ${{ parameters.IsDeploymentBranch }}
 - bash: echo Using eq IsDeploymentBranchString
   condition: eq(${{ parameters.IsDeploymentBranchString }}, 'true')
-- bash: echo Using IsDeploymentBranchVariable
-  condition: variables.IsDeploymentBranchVariable
-- bash: echo Using eq IsDeploymentBranchVariable
-  condition: eq(variables.IsDeploymentBranchVariable, 'true')
-- bash: echo Template IsDeploymentBranchVariable x${{ variables.IsDeploymentBranchVariable }}x
-- bash: echo Expression IsDeploymentBranchVariable x$[ variables.IsDeploymentBranchVariable ]x
-- bash: echo Macro IsDeploymentBranchVariable x$(IsDeploymentBranchVariable)x
+- bash: echo Using IsDeploymentBranch
+  condition: variables.IsDeploymentBranch
+- bash: echo Using eq IsDeploymentBranch
+  condition: eq(variables.IsDeploymentBranch, 'true')
+- bash: echo Template IsDeploymentBranch x${{ variables.IsDeploymentBranch }}x
+- bash: echo Expression IsDeploymentBranch x$[ variables.IsDeploymentBranch ]x
+- bash: echo Macro IsDeploymentBranch x$(IsDeploymentBranch)x
 
 - task: DotNetCoreCLI@2
   displayName: Run dotnet tool restore
