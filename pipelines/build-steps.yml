@@ -75,15 +75,16 @@ steps:
 
 # Publish test results
 
-#- task: DotNetCoreCLI@2
-#  displayName: Run dotnet publish
-#  inputs:
-#    command: publish
-#    publishWebProjects: false
-#    projects: 
-#    arguments: '-c Release --runtime win-x64 --self-contained false -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.SourcesDirectory)/publish'
-#    zipAfterPublish: false
-#    modifyOutputPath: false
+- task: DotNetCoreCLI@2
+  displayName: Run dotnet publish
+  condition: succeeded()
+  inputs:
+    command: publish
+    publishWebProjects: false
+    projects: '*.sln'
+    arguments: '-c Release --runtime win-x64 --self-contained false -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: true
+    modifyOutputPath: false
 
 #- task: ArchiveFiles@2
 #  displayName: ZIP published files
@@ -95,6 +96,7 @@ steps:
 
 - task: PublishPipelineArtifact@1
   displayName: 'Publish app artifact'
+  condition: and(succeeded(), ${{ parameters.IsDeploymentBranch }})
   inputs:
     targetPath: '$(Build.ArtifactStagingDirectory)'
     artifactName: PublishedBuild
