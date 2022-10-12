@@ -1,6 +1,7 @@
 parameters:
   - name: IsDeploymentBranch
     type: boolean
+  - name: IsDeploymentBranchString
 
 steps:
 - checkout: self
@@ -8,7 +9,7 @@ steps:
 
 - script: |
     echo Building $(Build.SourceBranch) [$(Build.Reason)]
-    echo IsDeploymentBranch ${{ parameters.IsDeploymentBranch }}
+    echo IsDeploymentBranch ${{ parameters.IsDeploymentBranch }} (${{ parameters.IsDeploymentBranchString }})
     echo DotNet
     dotnet --version
     echo Node
@@ -16,6 +17,11 @@ steps:
     echo Npm
     npm --version
   displayName: "Report versions"
+
+- bash: echo Using template IsDeploymentBranch
+  condition: ${{ parameters.IsDeploymentBranch }}
+- bash: echo Using eq IsDeploymentBranchString
+  condition: eq(parameters.IsDeploymentBranchString, 'true'))
 
 - task: DotNetCoreCLI@2
   displayName: Run dotnet tool restore

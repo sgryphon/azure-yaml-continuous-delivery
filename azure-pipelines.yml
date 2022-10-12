@@ -5,7 +5,7 @@ trigger:
 - test-pipeline/*
 
 variables:
-  IsDeploymentBranch: $[ or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/test-pipeline/')) ]
+  IsDeploymentBranch: ${{ or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/test-pipeline/')) }}
   # Integration variables
   Integration_EnvironmentName: 'Integration'
   # Test variables
@@ -54,7 +54,8 @@ stages:
       - bash: echo Hello YAML build
       - template: 'pipelines/build-steps.yml'
         parameters:
-          IsDeploymentBranch: $[ eq(variables.IsDeploymentBranch, 'true') ]
+          IsDeploymentBranch: ${{ variables.IsDeploymentBranch }}
+          IsDeploymentBranchString: $[ variables.IsDeploymentBranch ]
 
   - stage: IntegrationStage
     displayName: Integration
