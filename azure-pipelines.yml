@@ -55,7 +55,7 @@ stages:
       - template: 'pipelines/build-steps.yml'
         parameters:
           IsDeploymentBranch: ${{ variables.IsDeploymentBranch }}
-          IsDeploymentBranchString: $[ variables.IsDeploymentBranch ]
+          IsDeploymentBranchString: $(IsDeploymentBranch)
 
   - stage: IntegrationStage
     displayName: Integration
