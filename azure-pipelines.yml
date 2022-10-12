@@ -1,0 +1,41 @@
+# Azure Pipeline
+
+trigger:
+- main
+- test-pipeline/*
+
+variables:
+  # CI (DEV) variables
+  CIDeployEnvironment: 'dev'
+  SourceFromMacro: $(Build.SourceBranch)
+  SourceFromTemplate1: ${{ variables.Build.SourceBranch }}
+  SourceFromTemplate2: ${{ variables['Build.SourceBranch'] }}
+  SourceFromExpression1: $[ variables.Build.SourceBranch ]
+  SourceFromExpression2: $[ variables['Build.SourceBranch'] ]
+  IsMain: $[ eq(variables['Build.SourceBranch'], 'refs/heads/main') ]
+  IsPipelineTest: $[ startsWith(variables['Build.SourceBranch'], 'refs/heads/test-pipeline/') ]
+
+stages:
+  - stage: BuildStage
+    displayName: Build
+    jobs:
+    - job: Build
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      steps:
+      - bash: echo Hello YAML build
+      - script: |
+          echo SourceFromMacro x$(SourceFromMacro)x
+          echo SourceFromTemplate1 x$(SourceFromTemplate)x
+          echo SourceFromTemplate2 x$(SourceFromTemplate2)x
+          echo SourceFromExpression1: x$(SourceFromExpression1)x
+          echo SourceFromExpression2: x$(SourceFromExpression2)x
+      - bash: echo Using eq IsMain
+        condition: and(succeeded(), eq(variables.IsMain, 'true'))
+      - bash: echo Using eq IsPipelineTest
+        condition: and(succeeded(), eq(variables.IsPipelineTest, 'true'))
+      - bash: echo Using IsMain
+        condition: and(succeeded(), variables.IsMain)
+      - bash: echo Using IsPipelineTest
+        condition: and(succeeded(), variables.IsPipelineTest)
