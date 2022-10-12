@@ -83,7 +83,7 @@ steps:
     publishWebProjects: true
     projects: '*.sln'
     arguments: '-c Release -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: true
+    zipAfterPublish: false
     modifyOutputPath: false
 
 #- task: ArchiveFiles@2
