@@ -44,7 +44,7 @@ stages:
         condition: and(succeeded(), variables.IsMain)
       - bash: echo Using IsPipelineTest
         condition: and(succeeded(), variables.IsPipelineTest)
-    jobs:
+
     - job: BuildJob
       displayName: Build
       pool:
