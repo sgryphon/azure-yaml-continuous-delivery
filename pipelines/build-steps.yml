@@ -9,7 +9,7 @@ steps:
 
 - script: |
     echo Building $(Build.SourceBranch) [$(Build.Reason)]
-    echo IsDeploymentBranch ${{ parameters.IsDeploymentBranch }} (${{ parameters.IsDeploymentBranchString }})
+    echo ""IsDeploymentBranch ${{ parameters.IsDeploymentBranch }} (${{ parameters.IsDeploymentBranchString }})""
     echo DotNet
     dotnet --version
     echo Node
