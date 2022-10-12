@@ -1,0 +1,87 @@
+parameters:
+  - name: IsDeploymentBranch
+    type: boolean
+
+steps:
+- checkout: self
+  fetchDepth: 0
+
+- script: |
+    echo Building $(Build.SourceBranch) [$(Build.Reason)]
+    echo IsDeploymentBranch ${{ parameters.IsDeploymentBranch }}
+    echo DotNet
+    dotnet --version
+    echo Node
+    node --version    
+    echo Npm
+    npm --version
+  displayName: "Report versions"
+
+- task: DotNetCoreCLI@2
+  displayName: Run dotnet tool restore
+  inputs:
+    command: custom
+    custom: tool
+    arguments: restore
+
+- task: DotNetCoreCLI@2
+  displayName: Run GitVersion dotnet tool
+  inputs:
+    command: custom
+    custom: gitversion
+    arguments: /output buildserver
+
+#      - task: gitversion/setup@0
+#        displayName: Install GitVersion
+#        inputs:
+#          versionSpec: '5.5.0'
+
+#      - task: gitversion/execute@0
+#        displayName: Determine Version
+#        inputs:
+#          useConfigFile: true
+#          configFilePath: 'GitVersion.yml'
+
+- script: echo Semantic version '$(GitVersion.SemVer)', Build number '$(Build.BuildNumber)'
+  displayName: 'Output calculated SemVer variable'
+
+- task: DotNetCoreCLI@2
+  displayName: Run dotnet build
+  inputs:
+    command: build
+    arguments: '-c Debug -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha)'
+    projects: *.sln
+
+#      - task: DotNetCoreCLI@2
+#        displayName: Run dotnet test
+#        inputs:
+#          command: test
+#          nobuild: true
+#          arguments: '-c Debug'
+#          projects: *.sln
+
+# Publish test results
+
+#- task: DotNetCoreCLI@2
+#  displayName: Run dotnet publish
+#  inputs:
+#    command: publish
+#    publishWebProjects: false
+#    projects: 
+#    arguments: '-c Release --runtime win-x64 --self-contained false -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.SourcesDirectory)/publish'
+#    zipAfterPublish: false
+#    modifyOutputPath: false
+
+#- task: ArchiveFiles@2
+#  displayName: ZIP published files
+#  inputs:
+#    rootFolderOrFile: $(Build.SourcesDirectory)/publish
+#    includeRootFolder: false
+#    archiveType: 'zip'
+#    archiveFile: $(Build.ArtifactStagingDirectory)/Project_Name-$(GitVersion.SemVer).zip
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish app artifact'
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifactName: PublishedBuild

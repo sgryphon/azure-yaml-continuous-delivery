@@ -5,8 +5,14 @@ trigger:
 - test-pipeline/*
 
 variables:
-  # CI (DEV) variables
-  CIDeployEnvironment: 'dev'
+  IsDeploymentBranch: $[ or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/test-pipeline/')) ]
+  # Integration variables
+  Integration_EnvironmentName: 'Integration'
+  # Test variables
+  Test_EnvironmentName: 'Test'
+  # Production variables
+  Production_EnvironmentName: 'Production'
+  # Testing build variables
   SourceFromMacro: $(Build.SourceBranch)
   SourceFromTemplate1: ${{ variables.Build.SourceBranch }}
   SourceFromTemplate2: ${{ variables['Build.SourceBranch'] }}
@@ -19,12 +25,11 @@ stages:
   - stage: BuildStage
     displayName: Build
     jobs:
-    - job: Build
+    - job: Testing build variables
       pool:
         name: Azure Pipelines
         vmImage: 'ubuntu-latest'
       steps:
-      - bash: echo Hello YAML build
       - script: |
           echo SourceFromMacro x$(SourceFromMacro)x
           echo SourceFromTemplate1 x$(SourceFromTemplate)x
@@ -39,3 +44,71 @@ stages:
         condition: and(succeeded(), variables.IsMain)
       - bash: echo Using IsPipelineTest
         condition: and(succeeded(), variables.IsPipelineTest)
+    jobs:
+    - job: BuildJob
+      displayName: Build
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      steps:
+      - bash: echo Hello YAML build
+      - template: 'pipelines/build-steps.yml'
+        parameters:
+          IsDeploymentBranch: $[ eq(variables.IsDeploymentBranch, 'true') ]
+
+  - stage: IntegrationStage
+    displayName: Integration
+    condition: and(succeeded(), eq(variables.IsDeploymentBranch, 'true'))
+    dependsOn: BuildStage
+    jobs:
+    - deployment: IntegrationDeployment
+      displayName: Deploy Integration
+      environment: Integration
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: 'pipelines/deploy-steps.yml'
+              parameters:
+                EnvironmentName: $(Integration_EnvironmentName)
+
+  - stage: TestStage
+    displayName: Test
+    condition: succeeded()
+    dependsOn: IntegrationStage
+    jobs:
+    - deployment: TestDeployment
+      displayName: Deploy Test
+      environment: Test
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: 'pipelines/deploy-steps.yml'
+              parameters:
+                EnvironmentName: $(Test_EnvironmentName)
+
+  - stage: ProductionStage
+    displayName: Production
+    condition: succeeded()
+    dependsOn: TestStage
+    jobs:
+    - deployment: ProductionDeployment
+      displayName: Deploy Production
+      environment: Production
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: 'pipelines/deploy-steps.yml'
+              parameters:
+                EnvironmentName: $(Production_EnvironmentName)

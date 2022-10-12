@@ -1,0 +1,12 @@
+parameters:
+  - name: EnvironmentName
+    type: string
+
+steps:
+# Note: artifacts are downloaded automatically for deployment jobs, there's no need for explict download tasks
+
+- script: |
+    echo # Deployment #
+    echo Environment name: $(Environment.Name) / $(parameters.EnvironmentName)
+    echo Build number '$(Build.BuildNumber)'
+  displayName: "Report deployment"
