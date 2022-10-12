@@ -19,7 +19,7 @@ Add `.gitignore`, `.gitattributes`, and `.editorconfig` files, document importan
 
 Create a `src` directory, then create a new **dotnet** solution, a sample web app (with proxy port 44301), and add the web app to the solution.
 
-```sh
+```powershell
 mkdir src
 dotnet new sln
 dotnet new react --output src/Demo.WebApp --ProxyPort 44301
@@ -28,13 +28,13 @@ dotnet sln add src/Demo.WebApp
 
 Check it works by running the web API in one PowerShell terminal:
 
-```pwsh
+```powershell
 dotnet run --project src/Demo.WebApp --environment Development --urls 'http://*:8002'
 ```
 
 And then also running the front end proxy in a second PowerShell terminal (pointing at the API):
 
-```pwsh
+```powershell
 $env:ASPNETCORE_URLS = 'http://localhost:8002'
 npm run start --prefix src/Demo.WebApp/ClientApp
 ```
@@ -49,13 +49,13 @@ Check the front end proxy with a browser, e.g. `https://localhost:44301/`, and m
 
 Web API:
 
-```pwsh
+```powershell
 dotnet run --project src/Demo.WebApp --environment Development --urls 'https://*:44302'
 ```
 
 Front end:
 
-```pwsh
+```powershell
 $env:ASPNETCORE_URLS = 'https://localhost:44302'
 npm run start --prefix src/Demo.WebApp/ClientApp
 ```
@@ -67,7 +67,7 @@ This may be the Node server not trusting the developer certificate. A similar is
 
 For automated deployment you need a way to track which version is being deployed. For example, you can use GitVersion, which has built in support for semantic versioning.
 
-```pwsh
+```powershell
 dotnet new tool-manifest
 dotnet tool install GitVersion.Tool
 ```
@@ -85,7 +85,7 @@ ignore:
 
 To test local build and publish, you can also create a basic `build.ps1` script that generates the current version number and then tests, builds and publishes the project (however this project has no tests).
 
-```pwsh
+```powershell
 #!/usr/bin/env pwsh
 
 dotnet tool restore
@@ -101,14 +101,14 @@ There are a lot of alternatives for deploying websites, such as deploying contai
 
 To run the script locally you first log in to Azure CLI.
 
-```pwsh
+```powershell
 az login
 az account set --subscription <subscription id>
 ```
 
 Create a script (or several) to deploy the needed infrastructure. Create all the required infrastructure via scripts, so that it can be automatically deployed to each environment using the pipeline.
 
-```pwsh
+```powershell
 #!/usr/bin/env pwsh
 
 [CmdletBinding()]
@@ -177,7 +177,7 @@ This may mean there is a separate project and pipeline for the shared infrastruc
 
 First, create a basic `azure-pipelines.yml`, with a single build Stage, and Job with a single Step that echos a hello message; commit it, and push it to your GitHub repository.
 
-```
+```yaml
 trigger:
 - main
 
@@ -194,8 +194,6 @@ stages:
 ```
 
 ## Add the pipeline in Azure DevOps
-
-TODO:
 
 In Azure DevOps, create a new project. You can use Git for source control and Agile as the process template, although these won't be used. The example project is Public, but you normally an organisation would use Private projects.
 
@@ -217,8 +215,6 @@ I cancelled, reloaded the Azure DevOps project, and went through the Create Pipe
 
 ## Add environment gates
 
-TODO:
-
 Under Pipelines > Environments create your environments, e.g.
 
 * Integration - Where merged branches are continuous integrated and deployed.
@@ -231,20 +227,199 @@ This will add a gate before any stages linked to the Test environment will be ru
 
 Add a similar approval to the Production environment.
 
+## Add build job
 
-## Add build jobs
+### Create the build steps template
 
-TODO:
+You can template at the step, job, or stage level. This example uses template steps, which are then easy to reuse, e.g. across different jobs.
+
+Create a `pipeline/build-steps.yml` file, and put in the steps needed to build, test, publish, and package your application. These are all the steps that are independent of environments and that you want to do once for each build.
+
+If there are some steps (like push to a repository or feed) that you only want to do for branches that you are deploying, then you can add a `IsDeploymentBranch` parameter to the step template, and then calculate and pass in the value, e.g. based on the branch name (maybe `main` and `release/*`).
+
+Note that parameters are resolved at compile time, so you can only use pre-defined variables such as the branch name, and no runtime variables, and have to reference them with template syntax `${{ parameters.Xxxx }}`.
+
+Template syntax is used during pre-processing and can be used to generate the structure of the file or insert literals (or calculated literals) into the pipeline file.
+
+It cannot access any runtime information, but note that once the template has been included, variables in the main pipeline are available at runtime in the included template using the normal macro syntax, e.g. `$(MyVariable)`
+
+```yaml
+parameters:
+  - name: IsDeploymentBranch
+    type: boolean
+
+steps:
+- checkout: self
+  fetchDepth: 0
+
+- task: DotNetCoreCLI@2
+  displayName: Run dotnet tool restore
+  inputs:
+    command: custom
+    custom: tool
+    arguments: restore
+
+- task: DotNetCoreCLI@2
+  displayName: Run GitVersion dotnet tool
+  inputs:
+    command: custom
+    custom: gitversion
+    arguments: /output buildserver
+
+- task: DotNetCoreCLI@2
+  displayName: Run dotnet publish
+  condition: succeeded()
+  inputs:
+    command: publish
+    publishWebProjects: true
+    projects: '*.sln'
+    arguments: '-c Release -p:AssemblyVersion=$(GitVersion.AssemblySemVer) -p:FileVersion=$(GitVersion.AssemblySemFileVer) -p:Version=$(GitVersion.SemVer)+$(GitVersion.ShortSha) -o $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: false
+    modifyOutputPath: false
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish app artifact'
+  condition: and(succeeded(), ${{ parameters.IsDeploymentBranch }})
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifactName: PublishedBuild
+```
+
+### Reference the build steps template in the main pipeline
+
+While you could put the build steps directly into the main pipeline file (as you are only running them once), it is better to keep the two files structured at separate abstraction levels:
+
+* Main pipeline: high level stages and jobs.
+* Child template files: low level build steps and deployment steps.
+
+Keeping the two abstractions separate is easier to understand than mixing abstraction levels in the main file (build steps and deployment jobs).
+
+```yaml
+trigger:
+- main
+
+variables:
+  IsDeploymentBranch: ${{ eq(variables['Build.SourceBranch'], 'refs/heads/main') }}
+
+stages:
+  - stage: BuildStage
+    displayName: Build
+    jobs:
+    - job: BuildJob
+      displayName: Build
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      steps:
+      - template: 'pipelines/build-steps.yml'
+        parameters:
+          IsDeploymentBranch: ${{ variables.IsDeploymentBranch }}
+```
 
 ## Add deployment jobs
 
 TODO:
 
-## Configuring pipeline parameters
+### Create the deployment steps template
+
+Create a `pipeline/deploy-steps.yml` file for the deployment steps. This should have parameters for all the key values that differ by environment, e.g. the environment name, maybe prefix of suffixes for values, or similar settings.
+
+Parameters are pre-processor values that are used to compile the pipeline, so can even change the structure.
+
+Secrets, and secret management, needs some specific considerations.
+
+```yaml
+parameters:
+  - name: EnvironmentName
+    type: string
+
+steps:
+# Note: artifacts are downloaded automatically for deployment jobs, there's no need for explict download tasks
+
+- script: |
+    echo # Deployment #
+    echo Environment name: $(Environment.Name) / $(parameters.EnvironmentName)
+    echo Build number '$(Build.BuildNumber)'
+  displayName: "Report deployment"
+```
+
+
+### Reference the deployment steps template in the main pipeline
+
+In the main pipeline file, create the variables for each environment, and then the stages and deployment jobs. Link the stages to the environments created earlier.
+
+Add a reference to the deployment steps template for each job, with the corresponding variables. (You could put the environment values directly into the template parameters, but I find them easier to organise and manage as variables.)
+
+```yaml
+trigger:
+- main
+
+variables:
+  IsDeploymentBranch: ${{ eq(variables['Build.SourceBranch'], 'refs/heads/main') }}
+  # Integration variables
+  Integration_EnvironmentName: 'Integration'
+  # Test variables
+  Test_EnvironmentName: 'Test'
+  # Production variables
+  Production_EnvironmentName: 'Production'
+
+stages:
+  - stage: BuildStage
+    ...
+
+  - stage: IntegrationStage
+    displayName: Integration
+    condition: and(succeeded(), eq(variables.IsDeploymentBranch, 'true'))
+    dependsOn: BuildStage
+    jobs:
+    - deployment: IntegrationDeployment
+      displayName: Deploy Integration
+      environment: Integration
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: 'pipelines/deploy-steps.yml'
+              parameters:
+                EnvironmentName: $(Integration_EnvironmentName)
+
+  - stage: TestStage
+    displayName: Test
+    condition: succeeded()
+    dependsOn: IntegrationStage
+    jobs:
+    - deployment: TestDeployment
+      displayName: Deploy Test
+      environment: Test
+      pool:
+        name: Azure Pipelines
+        vmImage: 'ubuntu-latest'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - template: 'pipelines/deploy-steps.yml'
+              parameters:
+                EnvironmentName: $(Test_EnvironmentName)
+  ...
+```
+
+Repeat for the Production environment as well.
+
+## Secret management
+
+### Configuring pipeline parameters
 
 TODO:
 
 ## Additional considerations
+
+### Pull request builds
+
+TODO:
 
 ### More complex builds
 
