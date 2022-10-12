@@ -25,7 +25,7 @@ stages:
   - stage: BuildStage
     displayName: Build
     jobs:
-    - job: Testing build variables
+    - job: TestingBuildVariables
       pool:
         name: Azure Pipelines
         vmImage: 'ubuntu-latest'

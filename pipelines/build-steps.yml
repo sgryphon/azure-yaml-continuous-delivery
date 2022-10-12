@@ -21,7 +21,7 @@ steps:
 - bash: echo Using template IsDeploymentBranch
   condition: ${{ parameters.IsDeploymentBranch }}
 - bash: echo Using eq IsDeploymentBranchString
-  condition: eq(parameters.IsDeploymentBranchString, 'true'))
+  condition: eq(parameters.IsDeploymentBranchString, 'true')
 
 - task: DotNetCoreCLI@2
   displayName: Run dotnet tool restore
