@@ -47,6 +47,8 @@ export class FetchData extends Component {
         <h1 id="tabelLabel" >Weather forecast</h1>
         <p>This component demonstrates fetching data from the server.</p>
         {contents}
+        <p><button className="btn btn-primary" onClick={() => this.populateWeatherData()}>Refresh</button></p>
+        <p><button className="btn btn-primary" onClick={() => this.exampleError()}>Error</button></p>
       </div>
     );
   }
@@ -55,5 +57,21 @@ export class FetchData extends Component {
     const response = await fetch('weatherforecast');
     const data = await response.json();
     this.setState({ forecasts: data, loading: false });
+  }
+
+  async exampleError() {
+    try {
+      const response = await fetch('weatherforecast/throw');
+      if (!response.ok) {
+        const problem = await response.json();
+        const errorMessage = `Problem: ${problem.status} ${problem.title}. Check the logs for trace identifier ${problem.traceId.substr(3, 32)} at ${new Date()}.`;
+        console.error(errorMessage);
+        throw new Error(errorMessage, { cause: problem });
+      }
+      const data = await response.json();
+      this.setState({ forecasts: data, loading: false });
+    } catch (error) {
+      alert(`${error.name}\n${error.message}\n${error.cause?.detail||''}`);
+    }
   }
 }
